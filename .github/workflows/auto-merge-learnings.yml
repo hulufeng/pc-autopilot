@@ -3,7 +3,7 @@ name: auto-merge-learnings
 # 自主迭代：社区贡献零摩擦。
 # 仅当 PR 只改动 learnings.md、且为「仅追加（不删改已有行）」、且不含密钥模式时，
 # 由机器人自动合并；改动 SKILL.md 或含密钥的 PR 不自动合、留人审。
-# 用 `gh pr diff`（API 拉取），对 fork PR 也能正确取到 diff。
+# 全程走 GitHub API（curl），不依赖 gh CLI，避免鉴权/命令差异导致误失败。
 
 on:
   pull_request:
@@ -17,21 +17,28 @@ permissions:
 jobs:
   validate-and-merge:
     runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
     steps:
+      - name: Fetch diff via API
+        run: |
+          DIFF=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.diff" "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}")
+          echo "$DIFF" > /tmp/pr.diff
+          echo "=== DIFF head ==="
+          head -n 20 /tmp/pr.diff
+
       - name: Validate append-only + no secrets
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -e
-          DIFF=$(gh pr diff "$PR_NUMBER")
+          DIFF=$(cat /tmp/pr.diff)
           FILES=$(echo "$DIFF" | grep -E '^diff --git ' | sed -E 's#^diff --git a/.* b/(.*)$#\1#')
-          echo "Changed files: $FILES"
+          echo "FILES=[$FILES]"
           if [ "$FILES" != ".codebuddy/skills/pc-autopilot/learnings.md" ]; then
             echo "::error::PR changes files other than learnings.md; skipping auto-merge."
             exit 1
           fi
           DELS=$(echo "$DIFF" | grep -E '^-' | grep -v '^--- ' | grep -v '^diff --git ' | wc -l || true)
+          echo "DELS=[$DELS]"
           if [ "$DELS" -gt 0 ]; then
             echo "::error::PR deletes/modifies existing lines; must be append-only; skipping auto-merge."
             exit 1
@@ -44,7 +51,10 @@ jobs:
 
       - name: Auto-merge
         if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr merge "${{ github.event.pull_request.number }}" --squash --delete-branch
+          curl -s -X POST \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d '{"merge_method":"squash","delete_branch":true}' \
+            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge"
+          echo "::notice::auto-merged PR #${{ github.event.pull_request.number }}"
