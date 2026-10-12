@@ -10,11 +10,18 @@
 - `README.md` —— 本文件。
 
 ## 安装到你的工作区
+**推荐：直接把仓库 clone 到技能目录**（这样能自动同步社区经验）：
+```powershell
+git clone https://github.com/hulufeng/pc-autopilot.git <你的工作区>/.codebuddy/skills/pc-autopilot
+```
+加载时技能会自动 `git pull --ff-only` 拉取全网最新 `learnings.md`。
+
+若只想一次性拷贝（不启用自动同步），也可：
 ```powershell
 git clone https://github.com/hulufeng/pc-autopilot.git
 cp -r pc-autopilot/.codebuddy/skills/pc-autopilot <你的工作区>/.codebuddy/skills/
 ```
-（也可以只把 `SKILL.md` + `learnings.md` 拷过去。CodeBuddy 会在技能描述命中「操作我的电脑 / 点按钮看界面 / GUI 自动化 / 验证某面板是否崩」时自动加载。）
+CodeBuddy 会在技能描述命中「操作我的电脑 / 点按钮看界面 / GUI 自动化 / 验证某面板是否崩」时自动加载。
 
 ## 怎么「越用越聪明」
 1. 让 AI 在触发 GUI 操作时加载本技能。

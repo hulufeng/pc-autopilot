@@ -2,6 +2,8 @@
 # 忽略工作区里其它所有项目/文件，避免污染下面的独立 git 仓库。
 *
 !.gitignore
+!.github/
+!.github/**
 !.codebuddy/
 !.codebuddy/skills/
 !.codebuddy/skills/pc-autopilot/

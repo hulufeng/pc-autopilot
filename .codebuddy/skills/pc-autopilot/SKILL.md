@@ -61,4 +61,7 @@ Start-Process -FilePath 'cmd.exe' -ArgumentList '/c npm run dev' -WorkingDirecto
 - 开头先读 `learnings.md`，把里面的避坑点当默认动作。
 - 结束时把你这次新踩到的坑、新发现的本机事实、某流程更优的顺序，**追加**到 `learnings.md`（用追加，不覆盖旧内容）。
 - 若发现某条旧经验已过时/错误（如上面的 `LABCODE_PROJECT` 证伪），**划掉并标注"已证伪"**而非删除，保留演进痕迹。
+- **自动同步社区经验**：若本技能目录自身是 git 仓库（即用 `git clone` 安装、而非复制文件），加载时先 `git -C <本目录> pull --ff-only` 拉取全网最新 `learnings.md`；别人提的 PR 被机器人自动合并后，你打开电脑即拿到他人经验。
+- **元迭代（经验升方法）**：当某类坑在 `learnings.md` 反复出现（≥3 次）或同型问题高频，主动把它**提炼成上面「铁律」的新条目**——从零散经验升级为通用规则，技能不只堆数据、还会自我抽象。
+- **社区贡献零摩擦**：其他人把新坑开 PR 到本仓库，GitHub Action 会自动合并「仅追加 `learnings.md`、且不含密钥」的 PR；改动 `SKILL.md` 或含密钥的 PR 不自动合、留人审。
 这样技能会随每次实战累积，越来越准。
