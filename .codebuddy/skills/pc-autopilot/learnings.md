@@ -21,8 +21,7 @@
 - [2026-10-12] 重启 LabCode dev 用 `C:\Users\Administrator\AppData\Local\Temp\restart-labcode-dev.ps1`（`powershell -File` 执行），杀 electron-vite+dev node 树再 `cmd.exe /c npm run dev` 隐藏窗重启；启动后等 ~20s 用 get_windows 找新 pid（pid 每次变，别记死）。
 - [2026-10-12] 本机到 GitHub 的网络：git push（HTTPS→github.com:443）能通，但 `gh` 的 OAuth 令牌交换端点（/login/oauth/access_token）间歇性 TCP 超时，`gh auth login` 设备流常卡在最后换令牌那步（"failed to authenticate via web browser: ... connectex ... failed to respond"）。最稳推送法：去 GitHub 生成 classic PAT（勾 `repo`，**无期限**），用 PowerShell `Invoke-RestMethod -Uri https://api.github.com/user/repos -Method Post -Headers @{Authorization="Bearer $token"} -Body (@{name=...;private=$true;description=...}|ConvertTo-Json)` 建私有仓库；再 `git -c credential.helper= push "https://${token}@github.com/<user>/<repo>.git" master`，推完 `git remote set-url origin https://github.com/<user>/<repo>.git` 把令牌从配置去掉。⚠️ 别用 `curl.exe -d` 传 JSON——PowerShell 转义会破坏导致 "Problems parsing JSON"，且 `@file` 读文件在本机报 "error reading file"；`Invoke-RestMethod` 最稳。
 - [2026-10-12] pc-autopilot 仓库的 `origin` 已**内嵌 PAT**（仅存本地 `.git/config`，不进被推送的仓库），故以后直接 `git push origin master` 即可、无需 gh 登录/再要令牌。PAT 为**无期限** classic token（repo 权限），长期有效；若将来在 GitHub 撤销/轮换该 token，重新生成后执行 `git remote set-url origin "https://<新TOKEN>@github.com/hulufeng/pc-autopilot.git"` 即可。
-- [2026-10-12] 【自测标记】本行由 auto-merge 测试 PR 自动合入，用于验证自主迭代闭环可用；验证通过后已清理删除（复测触发）。
-- [2026-10-12] 【自测标记2】本行由 auto-merge 测试 PR #2 触发，用于验证机器人自动合并；验证通过后清理。
+
 
 ## 本机事实（验证基线）
 
