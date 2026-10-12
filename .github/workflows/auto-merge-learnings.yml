@@ -3,6 +3,7 @@ name: auto-merge-learnings
 # 自主迭代：社区贡献零摩擦。
 # 仅当 PR 只改动 learnings.md、且为「仅追加（不删改已有行）」、且不含密钥模式时，
 # 由机器人自动合并；改动 SKILL.md 或含密钥的 PR 不自动合、留人审。
+# 用 `gh pr diff`（API 拉取），对 fork PR 也能正确取到 diff。
 
 on:
   pull_request:
@@ -17,29 +18,25 @@ jobs:
   validate-and-merge:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Validate append-only + no secrets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -e
-          BASE="${{ github.event.pull_request.base.sha }}"
-          HEAD="${{ github.event.pull_request.head.sha }}"
-          CHANGED=$(git diff --name-only "$BASE" "$HEAD")
-          echo "Changed files: $CHANGED"
-          if [ "$CHANGED" != ".codebuddy/skills/pc-autopilot/learnings.md" ]; then
+          DIFF=$(gh pr diff "$PR_NUMBER")
+          FILES=$(echo "$DIFF" | grep -E '^diff --git ' | sed -E 's#^diff --git a/.* b/(.*)$#\1#')
+          echo "Changed files: $FILES"
+          if [ "$FILES" != ".codebuddy/skills/pc-autopilot/learnings.md" ]; then
             echo "::error::PR changes files other than learnings.md; skipping auto-merge."
             exit 1
           fi
-          DELS=$(git diff "$BASE" "$HEAD" -- '.codebuddy/skills/pc-autopilot/learnings.md' | grep -E '^-' | grep -v '^--- ' | wc -l || true)
+          DELS=$(echo "$DIFF" | grep -E '^-' | grep -v '^--- ' | grep -v '^diff --git ' | wc -l || true)
           if [ "$DELS" -gt 0 ]; then
             echo "::error::PR deletes/modifies existing lines; must be append-only; skipping auto-merge."
             exit 1
           fi
-          ADDED=$(git diff "$BASE" "$HEAD" -- '.codebuddy/skills/pc-autopilot/learnings.md' | grep '^+' | grep -v '^+++' || true)
-          if echo "$ADDED" | grep -Ei 'ghp_[a-z0-9]{16,}|github_pat_[a-z0-9]{16,}|AKIA[0-9A-Z]{16}|PRIVATE KEY|token[=:][A-Za-z0-9_]{16,}'; then
+          if echo "$DIFF" | grep -Ei 'ghp_[a-z0-9]{16,}|github_pat_[a-z0-9]{16,}|AKIA[0-9A-Z]{16}|PRIVATE KEY|token[=:][A-Za-z0-9_]{16,}'; then
             echo "::error::PR contains suspicious secret patterns; skipping auto-merge."
             exit 1
           fi
