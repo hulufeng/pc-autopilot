@@ -3,7 +3,8 @@ name: auto-merge-learnings
 # 自主迭代：社区贡献零摩擦。
 # 仅当 PR 只改动 learnings.md、且为「仅追加（不删改已有行）」、且不含密钥模式时，
 # 由机器人自动合并；改动 SKILL.md 或含密钥的 PR 不自动合、留人审。
-# 全程走 GitHub API（curl），不依赖 gh CLI，避免鉴权/命令差异导致误失败。
+# 校验走 GitHub API（curl 拉 diff，已验证可读）；合并走 gh pr merge（已验证可合）。
+# 不用 curl 直连合并 API——该环境会把它伪装成 404 拒绝。
 
 on:
   pull_request:
@@ -22,8 +23,7 @@ jobs:
     steps:
       - name: Fetch diff via API
         run: |
-          DIFF=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.diff" "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}")
-          echo "$DIFF" > /tmp/pr.diff
+          curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github.v3.diff" "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}" -o /tmp/pr.diff
           echo "=== DIFF head ==="
           head -n 20 /tmp/pr.diff
 
@@ -51,10 +51,8 @@ jobs:
 
       - name: Auto-merge
         if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer $GITHUB_TOKEN" \
-            -H "Content-Type: application/json" \
-            -d '{"merge_method":"squash","delete_branch":true}' \
-            "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/merge"
+          gh pr merge "${{ github.event.pull_request.number }}" --squash --delete-branch --repo "${{ github.repository }}"
           echo "::notice::auto-merged PR #${{ github.event.pull_request.number }}"
