@@ -37,6 +37,8 @@
 
 - [2026-10-12] ~~`LABCODE_PROJECT` 环境变量 / `%TEMP%\labcode_project.txt` 让 LabCode 启动即开工程~~ → 已证伪：src/main/index.ts 无此读取逻辑，写入后"尚未打开项目"依旧。改用 project:openPath IPC。
 
+- [2026-10-12] 本机跑 PowerShell 后台自动化的 4 个雷区（配 ghidra-watchdog 看守助手时全踩一遍，务必记住）：① inline `powershell -Command "...$var..."` 的 `$` 变量会被壳层剥光（`$x`/`$_` 变空）→ 后台脚本一律写成 `.ps1` 用 `-File` 跑，禁用 `-Command` 传带变量串；② 字符串里 `"$i:"` 触发 PowerShell 解析错误（`$var:` 被当成变量作用域/驱动名限定符）→ 用 `${i}:` 或字符串拼接；③ **含中文的 `.ps1` 必须存 UTF-8 with BOM**，否则 Windows PowerShell 5.1 读无 BOM 脚本默认按 GBK → 中文全变 `鏂囦欢` 类乱码、字符串解析崩（报 "string is missing the terminator"，且报错文本是一堆乱码）→ 读用 `[System.IO.File]::ReadAllText($p,[System.Text.Encoding]::UTF8)`、写用 `WriteAllText($p,$t,(New-Object System.Text.UTF8Encoding($true)))` 补 BOM；④ command 模式别写 `Say "a"+$x+"b"`（`+` 解析歧义）→ 先 `$m="a"+$x+"b"; Say $m`。附：挂后台前先用 `[System.Management.Automation.Language.Parser]::ParseFile` 查语法（语法错会静默秒退、零日志，极难排查）；目标目录里残留的 0 字节同名文件会被 glob 误匹配，启动看守前先清残留。
+
 ## 待验证 / 存疑
 
 - [2026-10-12] ESP-IDF Kconfig 面板在 GUI 里尚未用真实工程跑通（只做了合成 Kconfig 确定性验证）。下次开一个含 Kconfig 的 ESP-IDF 工程（如 D:\work\projects\s3-ov2640-face-detect——但它根目录无 Kconfig，需确认真正的 ESP-IDF 配置型工程路径）再 GUI 复核一次。
